@@ -134,8 +134,9 @@ export function OnboardingInventoryScan({
     return () => {
       window.clearTimeout(timeout);
       controller.abort();
+      hasTriedQuickSync.current = false;
     };
-  }, [initialPreview.totalMatching]);
+  }, [initialPreview.totalMatching, threshold]);
 
   const localBelowThreshold = preview.distribution
     ? Object.entries(preview.distribution)
