@@ -1,0 +1,261 @@
+/* ── Step indicator ── */
+
+.stepIndicator {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0;
+  padding: 16px 12px 28px;
+  user-select: none;
+}
+
+.stepItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  flex: 1;
+  max-width: 200px;
+}
+
+.stepRow {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  position: relative;
+}
+
+.stepCircle {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 650;
+  font-size: 15px;
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  z-index: 2;
+  border: 2.5px solid var(--p-color-border-secondary);
+  background: var(--p-color-bg-surface);
+  color: var(--p-color-text-secondary);
+}
+
+.stepCircle.active {
+  border-color: var(--p-color-bg-fill-brand);
+  background: var(--p-color-bg-fill-brand);
+  color: #fff;
+  box-shadow: 0 0 0 5px rgba(0, 128, 96, 0.12);
+}
+
+.stepCircle.completed {
+  border-color: var(--p-color-bg-fill-success);
+  background: var(--p-color-bg-fill-success);
+  color: #fff;
+}
+
+.stepLine {
+  flex: 1;
+  height: 3px;
+  background: var(--p-color-border-secondary);
+  transition: background 0.35s ease;
+  min-width: 24px;
+}
+
+.stepLine.filled {
+  background: var(--p-color-bg-fill-success);
+}
+
+.stepLine.invisible {
+  visibility: hidden;
+}
+
+.stepLabel {
+  margin-top: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--p-color-text-secondary);
+  text-align: center;
+  transition: color 0.3s ease, font-weight 0.3s ease;
+  line-height: 1.35;
+  letter-spacing: 0.01em;
+}
+
+.stepLabel.active {
+  color: var(--p-color-text);
+  font-weight: 650;
+}
+
+/* ── Wizard content area ── */
+
+.wizardContent {
+  position: relative;
+  overflow: hidden;
+  min-height: 300px;
+}
+
+/* ── Step content inner ── */
+
+.stepContent {
+  width: 100%;
+}
+
+/* ── Section heading area inside cards ── */
+
+.sectionHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+/* ── Navigation bar ── */
+
+.navBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 20px;
+  border-top: 1px solid var(--p-color-border-secondary);
+  margin-top: 4px;
+}
+
+.navBarRight {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+/* ── Step counter badge ── */
+
+.stepCounter {
+  font-size: 13.5px;
+  color: var(--p-color-text-secondary);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+/* ── Review summary ── */
+
+
+
+/* ── Scope layout: two-column with preview ── */
+
+.scopeLayout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 640px) {
+  .scopeLayout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.scopeChoices {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.scopePreview {
+  background: var(--p-color-bg-surface-secondary);
+  border: 1px solid var(--p-color-border-secondary);
+  border-radius: 12px;
+  padding: 0;
+  min-height: 160px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: border-color 0.2s ease;
+}
+
+.scopePreview:hover {
+  border-color: var(--p-color-border);
+}
+
+.scopePreviewHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--p-color-border-secondary);
+  background: var(--p-color-bg-surface);
+}
+
+.scopePreviewBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 11px;
+  background: var(--p-color-bg-fill-brand);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1;
+}
+
+.scopePreviewList {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  max-height: 220px;
+}
+
+.scopePreviewItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--p-color-border-secondary);
+  transition: background 0.15s ease;
+}
+
+.scopePreviewItem:last-child {
+  border-bottom: none;
+}
+
+.scopePreviewItem:hover {
+  background: var(--p-color-bg-surface-hover);
+}
+
+.scopePreviewItemTitle {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--p-color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.scopePreviewEmpty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px 16px;
+  gap: 10px;
+}
+
+.scopePreviewEmptyIcon {
+  opacity: 0.45;
+}
+
+/* ── Checkmark SVG animation inside completed circles ── */
+
+.checkmark {
+  width: 20px;
+  height: 20px;
+}

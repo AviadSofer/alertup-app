@@ -1,363 +1,169 @@
-import { useEffect } from "react";
-import type {
-  ActionFunctionArgs,
-  HeadersFunction,
-  LoaderFunctionArgs,
-} from "react-router";
-import { useFetcher } from "react-router";
-import { useAppBridge } from "@shopify/app-bridge-react";
-import { authenticate } from "../shopify.server";
-import { boundary } from "@shopify/shopify-app-react-router/server";
+import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
+import { Link, useLoaderData, useRouteError } from 'react-router';
+import { Banner, Layout, Page } from "@shopify/polaris";
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
-  await authenticate.admin(request);
+import { authenticate } from "app/shopify.server";
+import { isPivotPlaceholderEnabled } from "app/lib/feature-toggles";
+import {
+  DEFAULT_RULE_NAME,
+  getAlertRulesForShop,
+  getShopIdByDomain,
+  setStoreDefaultThreshold,
+} from "app/services/alert-rules/alert-rule.service.server";
+import { getAlertDashboardSummary } from "app/services/alert-rules/dashboard.service.server";
+import type { AlertDashboardSummary } from "app/services/alert-rules/dashboard.service.server";
+import { getShopByDomain } from "app/services/db/shop.service";
+import { sendAlertRuleCreatedEmail } from "app/services/resend/resend.service";
+import { LowStockActivation } from "../components/LowStockActivation";
+import { PivotDashboard } from "../components/PivotDashboard";
 
-  return null;
-};
+import type { InventoryStatus } from "../models/inventory-status.server";
+import { getInventoryStatus } from "../models/inventory-status.server";
+import { getProductInventoryAnalysis } from "../models/inventory-analysis.server";
+import { ClassicHomePage } from "../components/ClassicHomePage";
 
-export const action = async ({ request }: ActionFunctionArgs) => {
-  const { admin } = await authenticate.admin(request);
-  const color = ["Red", "Orange", "Yellow", "Green"][
-    Math.floor(Math.random() * 4)
-  ];
-  const response = await admin.graphql(
-    `#graphql
-      mutation populateProduct($product: ProductCreateInput!) {
-        productCreate(product: $product) {
-          product {
-            id
-            title
-            handle
-            status
-            variants(first: 10) {
-              edges {
-                node {
-                  id
-                  price
-                  barcode
-                  createdAt
-                }
-              }
-            }
-            demoInfo: metafield(namespace: "$app", key: "demo_info") {
-              jsonValue
-            }
-          }
-        }
-      }`,
-    {
-      variables: {
-        product: {
-          title: `${color} Snowboard`,
-          metafields: [
-            {
-              namespace: "$app",
-              key: "demo_info",
-              value: "Created by React Router Template",
-            },
-          ],
+type LoaderData =
+  | {
+      mode: "pivot";
+      summary: AlertDashboardSummary;
+      shopEmail: string | null;
+    }
+  | { mode: "classic"; inventoryStatus: InventoryStatus };
+
+export const loader = async ({
+  request,
+}: LoaderFunctionArgs): Promise<LoaderData> => {
+  if (isPivotPlaceholderEnabled()) {
+    const { session } = await authenticate.admin(request);
+    const [shopId, shop] = await Promise.all([
+      getShopIdByDomain(session.shop),
+      getShopByDomain(session.shop),
+    ]);
+    const shopEmail = shop?.contactEmail || shop?.email || null;
+
+    if (!shopId) {
+      return {
+        mode: "pivot",
+        shopEmail,
+        summary: {
+          activeRulesCount: 0,
+          productsBelowThresholdCount: 0,
+          totalInventoryItemsCount: 0,
+          alertsSentThisWeek: 0,
+          defaultThreshold: null,
+          hasRules: false,
+          rules: [],
+          recentAlerts: [],
         },
-      },
-    },
-  );
-  const responseJson = await response.json();
+      };
+    }
 
-  const product = responseJson.data!.productCreate!.product!;
-  const variantId = product.variants.edges[0]!.node!.id!;
+    const summary = await getAlertDashboardSummary(shopId);
 
-  const variantResponse = await admin.graphql(
-    `#graphql
-    mutation shopifyReactRouterTemplateUpdateVariant($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
-      productVariantsBulkUpdate(productId: $productId, variants: $variants) {
-        productVariants {
-          id
-          price
-          barcode
-          createdAt
-        }
-      }
-    }`,
-    {
-      variables: {
-        productId: product.id,
-        variants: [{ id: variantId, price: "100.00" }],
-      },
-    },
+    return {
+      mode: "pivot",
+      summary,
+      shopEmail,
+    };
+  }
+
+  const { admin, session } = await authenticate.admin(request);
+
+  const productInventoryAnalysis = await getProductInventoryAnalysis(
+    session.shop,
+    admin,
   );
 
-  const variantResponseJson = await variantResponse.json();
-
-  const metaobjectResponse = await admin.graphql(
-    `#graphql
-    mutation shopifyReactRouterTemplateUpsertMetaobject($handle: MetaobjectHandleInput!, $metaobject: MetaobjectUpsertInput!) {
-      metaobjectUpsert(handle: $handle, metaobject: $metaobject) {
-        metaobject {
-          id
-          handle
-          title: field(key: "title") {
-            jsonValue
-          }
-          description: field(key: "description") {
-            jsonValue
-          }
-        }
-        userErrors {
-          field
-          message
-        }
-      }
-    }`,
-    {
-      variables: {
-        handle: {
-          type: "$app:example",
-          handle: "demo-entry",
-        },
-        metaobject: {
-          fields: [
-            { key: "title", value: "Demo Entry" },
-            {
-              key: "description",
-              value:
-                "This metaobject was created by the Shopify app template to demonstrate the metaobject API.",
-            },
-          ],
-        },
-      },
-    },
+  const activeProducts = productInventoryAnalysis.filter(
+    (product) => product.status === "ACTIVE",
   );
-
-  const metaobjectResponseJson = await metaobjectResponse.json();
 
   return {
-    product: responseJson!.data!.productCreate!.product,
-    variant:
-      variantResponseJson!.data!.productVariantsBulkUpdate!.productVariants,
-    metaobject:
-      metaobjectResponseJson!.data!.metaobjectUpsert!.metaobject,
+    mode: "classic",
+    inventoryStatus: getInventoryStatus(activeProducts),
   };
 };
 
-export default function Index() {
-  const fetcher = useFetcher<typeof action>();
+export const action = async ({ request }: ActionFunctionArgs) => {
+  const { session } = await authenticate.admin(request);
+  const formData = await request.formData();
+  const intent = String(formData.get("intent") ?? "");
 
-  const shopify = useAppBridge();
-  const isLoading =
-    ["loading", "submitting"].includes(fetcher.state) &&
-    fetcher.formMethod === "POST";
+  if (intent !== "activate-default-alert") {
+    return { error: "Unknown action." };
+  }
 
-  useEffect(() => {
-    if (fetcher.data?.product?.id) {
-      shopify.toast.show("Product created");
+  const shop = await getShopByDomain(session.shop);
+  const shopId = shop?.id ?? null;
+
+  if (!shopId) {
+    return {
+      error: "Shop setup is still in progress. Please refresh and try again.",
+    };
+  }
+
+  const thresholdValue = String(formData.get("defaultThreshold") ?? "");
+  const threshold = Number(thresholdValue);
+
+  if (!Number.isInteger(threshold) || threshold < 0) {
+    return { error: "Threshold must be a whole number at or above 0." };
+  }
+
+  try {
+    await setStoreDefaultThreshold(shopId, threshold);
+
+    const recipientEmail = (shop?.contactEmail || shop?.email || "").trim();
+
+    if (recipientEmail) {
+      try {
+        await sendAlertRuleCreatedEmail({
+          to: [{ email: recipientEmail }],
+          shopDomain: session.shop,
+          threshold,
+        });
+      } catch (emailError) {
+        console.error("Alert rule confirmation email failed:", emailError);
+      }
     }
-  }, [fetcher.data?.product?.id, shopify]);
 
-  const generateProduct = () => fetcher.submit({}, { method: "POST" });
+    const rules = await getAlertRulesForShop(shopId);
+    const rule =
+      rules.find(
+        (candidate) =>
+          candidate.scopeType === "all" && candidate.name === DEFAULT_RULE_NAME,
+      ) ?? rules.find((candidate) => candidate.scopeType === "all");
 
-  return (
-    <s-page heading="Shopify app template">
-      <s-button slot="primary-action" onClick={generateProduct}>
-        Generate a product
-      </s-button>
+    return { success: true, rule };
+  } catch (error) {
+    console.error("Default alert activation failed:", error);
+    return { error: "Low-stock alerts could not be activated yet." };
+  }
+};
 
-      <s-section heading="Congrats on creating a new Shopify app 🎉">
-        <s-paragraph>
-          This embedded app template uses{" "}
-          <s-link
-            href="https://shopify.dev/docs/apps/tools/app-bridge"
-            target="_blank"
-          >
-            App Bridge
-          </s-link>{" "}
-          interface examples like an{" "}
-          <s-link href="/app/additional">additional page in the app nav</s-link>
-          , as well as an{" "}
-          <s-link
-            href="https://shopify.dev/docs/api/admin-graphql"
-            target="_blank"
-          >
-            Admin GraphQL
-          </s-link>{" "}
-          mutation demo, to provide a starting point for app development.
-        </s-paragraph>
-      </s-section>
-      <s-section heading="Get started with products">
-        <s-paragraph>
-          Generate a product with GraphQL and get the JSON output for that
-          product. Learn more about the{" "}
-          <s-link
-            href="https://shopify.dev/docs/api/admin-graphql/latest/mutations/productCreate"
-            target="_blank"
-          >
-            productCreate
-          </s-link>{" "}
-          mutation in our API references. Includes a product{" "}
-          <s-link
-            href="https://shopify.dev/docs/apps/build/custom-data/metafields"
-            target="_blank"
-          >
-            metafield
-          </s-link>{" "}
-          and{" "}
-          <s-link
-            href="https://shopify.dev/docs/apps/build/custom-data/metaobjects"
-            target="_blank"
-          >
-            metaobject
-          </s-link>
-          .
-        </s-paragraph>
-        <s-stack direction="inline" gap="base">
-          <s-button
-            onClick={generateProduct}
-            {...(isLoading ? { loading: true } : {})}
-          >
-            Generate a product
-          </s-button>
-          {fetcher.data?.product && (
-            <s-button
-              onClick={() => {
-                shopify.intents.invoke?.("edit:shopify/Product", {
-                  value: fetcher.data?.product?.id,
-                });
-              }}
-              target="_blank"
-              variant="tertiary"
-            >
-              Edit product
-            </s-button>
-          )}
-        </s-stack>
-        {fetcher.data?.product && (
-          <s-section heading="productCreate mutation">
-            <s-stack direction="block" gap="base">
-              <s-box
-                padding="base"
-                borderWidth="base"
-                borderRadius="base"
-                background="subdued"
-              >
-                <pre
-                  style={{
-                    margin: 0,
-                    whiteSpace: "pre-wrap",
-                    wordBreak: "break-word",
-                  }}
-                >
-                  <code>{JSON.stringify(fetcher.data.product, null, 2)}</code>
-                </pre>
-              </s-box>
+export default function Index() {
+  const data = useLoaderData<typeof loader>() as LoaderData;
 
-              <s-heading>productVariantsBulkUpdate mutation</s-heading>
-              <s-box
-                padding="base"
-                borderWidth="base"
-                borderRadius="base"
-                background="subdued"
-              >
-                <pre
-                  style={{
-                    margin: 0,
-                    whiteSpace: "pre-wrap",
-                    wordBreak: "break-word",
-                  }}
-                >
-                  <code>{JSON.stringify(fetcher.data.variant, null, 2)}</code>
-                </pre>
-              </s-box>
+  if (data.mode === "classic") {
+    return <ClassicHomePage inventoryStatus={data.inventoryStatus} />;
+  }
 
-              <s-heading>metaobjectUpsert mutation</s-heading>
-              <s-box
-                padding="base"
-                borderWidth="base"
-                borderRadius="base"
-                background="subdued"
-              >
-                <pre
-                  style={{
-                    margin: 0,
-                    whiteSpace: "pre-wrap",
-                    wordBreak: "break-word",
-                  }}
-                >
-                  <code>
-                    {JSON.stringify(fetcher.data.metaobject, null, 2)}
-                  </code>
-                </pre>
-              </s-box>
-            </s-stack>
-          </s-section>
-        )}
-      </s-section>
-
-      <s-section slot="aside" heading="App template specs">
-        <s-paragraph>
-          <s-text>Framework: </s-text>
-          <s-link href="https://reactrouter.com/" target="_blank">
-            React Router
-          </s-link>
-        </s-paragraph>
-        <s-paragraph>
-          <s-text>Interface: </s-text>
-          <s-link
-            href="https://shopify.dev/docs/api/app-home/using-polaris-components"
-            target="_blank"
-          >
-            Polaris web components
-          </s-link>
-        </s-paragraph>
-        <s-paragraph>
-          <s-text>API: </s-text>
-          <s-link
-            href="https://shopify.dev/docs/api/admin-graphql"
-            target="_blank"
-          >
-            GraphQL
-          </s-link>
-        </s-paragraph>
-        <s-paragraph>
-          <s-text>Custom data: </s-text>
-          <s-link
-            href="https://shopify.dev/docs/apps/build/custom-data"
-            target="_blank"
-          >
-            Metafields &amp; metaobjects
-          </s-link>
-        </s-paragraph>
-        <s-paragraph>
-          <s-text>Database: </s-text>
-          <s-link href="https://www.prisma.io/" target="_blank">
-            Prisma
-          </s-link>
-        </s-paragraph>
-      </s-section>
-
-      <s-section slot="aside" heading="Next steps">
-        <s-unordered-list>
-          <s-list-item>
-            Build an{" "}
-            <s-link
-              href="https://shopify.dev/docs/apps/getting-started/build-app-example"
-              target="_blank"
-            >
-              example app
-            </s-link>
-          </s-list-item>
-          <s-list-item>
-            Explore Shopify&apos;s API with{" "}
-            <s-link
-              href="https://shopify.dev/docs/apps/tools/graphiql-admin-api"
-              target="_blank"
-            >
-              GraphiQL
-            </s-link>
-          </s-list-item>
-        </s-unordered-list>
-      </s-section>
-    </s-page>
-  );
+  return <PivotDashboard summary={data.summary} shopEmail={data.shopEmail} />;
 }
 
-export const headers: HeadersFunction = (headersArgs) => {
-  return boundary.headers(headersArgs);
-};
+export function ErrorBoundary() {
+  const error = useRouteError();
+  console.error("Dashboard Route Error:", error);
+
+  return (
+    <Page>
+      <Layout>
+        <Layout.Section>
+          <Banner title="Error loading dashboard data" tone="critical">
+            <p>Please refresh the page or try again later.</p>
+          </Banner>
+          <Link to="/app/alerts">Go to alert rules</Link>
+        </Layout.Section>
+      </Layout>
+    </Page>
+  );
+}

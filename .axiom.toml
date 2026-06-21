@@ -1,0 +1,4 @@
+[deployments.prod]
+url = "https://api.axiom.co"
+token = "xaat-5216dbf4-2f93-47aa-856c-4335dbf99eec"
+org_id = "aviad-nzfh"

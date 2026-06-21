@@ -1,0 +1,116 @@
+.summaryCardClickable {
+  cursor: pointer;
+  border-radius: var(--p-border-radius-300);
+}
+
+.summaryCardClickable:focus-visible {
+  outline: 2px solid var(--p-color-border-focus);
+  outline-offset: 2px;
+}
+
+.metricIconWrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.ruleRow {
+  padding: 12px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.ruleRow:hover {
+  background-color: var(--p-color-bg-surface-hover);
+}
+
+.ruleRow:focus-visible {
+  outline: 2px solid var(--p-color-border-focus);
+  outline-offset: 2px;
+}
+
+.unifiedMetricsBar {
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 768px) {
+  .unifiedMetricsBar {
+    flex-direction: row;
+    align-items: stretch;
+  }
+}
+
+.metricDivider {
+  height: 1px;
+  background-color: var(--p-color-border-subdued);
+}
+
+@media (min-width: 768px) {
+  .metricDivider {
+    height: auto;
+    width: 1px;
+  }
+}
+
+.summaryMetric {
+  flex: 1;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: background-color 0.15s ease;
+}
+
+.summaryMetricClickable {
+  cursor: pointer;
+}
+
+.summaryMetricClickable:hover {
+  background-color: var(--p-color-bg-surface-hover);
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.iconBox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cardBody {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.valueText {
+  font-size: 2.25rem;
+  font-weight: 600;
+  color: var(--p-color-text);
+  margin-top: 4px;
+}
+
+.valueText[data-tone="caution"] {
+  color: var(--p-color-text-critical);
+}
+
+.actionHint {
+  margin-top: 12px;
+}
+
+.alertRow {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background-color: var(--p-color-bg-surface-secondary);
+}
+

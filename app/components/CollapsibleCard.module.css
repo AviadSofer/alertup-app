@@ -1,0 +1,23 @@
+.container {
+  padding: 16px;
+}
+
+.title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  word-break: break-word;
+  max-width: 100%;
+  line-height: 1.2;
+  text-align: left;
+}
+
+@media (max-width: 600px) {
+  .title {
+    font-size: 14px;
+    text-align: center;
+  }
+  .container {
+    padding: 8px;
+  }
+}

@@ -1,0 +1,80 @@
+.toggleContainer {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toggleLabel {
+  font-size: 0.875rem;
+  color: var(--p-color-text-subdued);
+}
+
+.toggleSwitch {
+  position: relative;
+  display: inline-block;
+  width: 32px;
+  height: 18px;
+}
+
+.toggleSwitch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--p-color-bg-surface-tertiary);
+  transition: 0.2s;
+  border-radius: 18px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 14px;
+  width: 14px;
+  left: 2px;
+  bottom: 2px;
+  background-color: white;
+  transition: 0.2s;
+  border-radius: 50%;
+  box-shadow: var(--p-shadow-100);
+}
+
+.toggleSwitch input:checked + .slider {
+  background-color: var(--p-color-bg-fill-success);
+}
+
+.toggleSwitch input:focus-visible + .slider {
+  outline: 2px solid var(--p-color-border-focus);
+  outline-offset: 2px;
+}
+
+.toggleSwitch input:checked + .slider:before {
+  transform: translateX(14px);
+}
+
+.toggleSwitch input:disabled + .slider {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.loadingSpinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--p-color-border-disabled);
+  border-top-color: var(--p-color-icon-secondary);
+  border-radius: 50%;
+  animation: toggleSpin 0.8s linear infinite;
+  margin-left: 2px;
+}
+
+@keyframes toggleSpin {
+  to { transform: rotate(360deg); }
+}

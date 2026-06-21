@@ -9,26 +9,157 @@ generator client {
 // enough when changing adapters.
 // See https://www.prisma.io/docs/orm/reference/prisma-schema-reference#string for more information
 datasource db {
-  provider = "sqlite"
-  url      = "file:dev.sqlite"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  // provider = "postgresql"
+  // url      = env("DATABASE_URL")
 }
 
 model Session {
-  id            String    @id
-  shop          String
-  state         String
-  isOnline      Boolean   @default(false)
-  scope         String?
-  expires       DateTime?
-  accessToken   String
-  userId        BigInt?
-  firstName     String?
-  lastName      String?
-  email         String?
-  accountOwner  Boolean   @default(false)
-  locale        String?
-  collaborator  Boolean?  @default(false)
-  emailVerified Boolean?  @default(false)
+  id                  String    @id
+  shop                String
+  state               String
+  isOnline            Boolean   @default(false)
+  scope               String?
+  expires             DateTime?
+  accessToken         String
+  userId              BigInt?
+  firstName           String?
+  lastName            String?
+  email               String?
+  accountOwner        Boolean   @default(false)
+  locale              String?
+  collaborator        Boolean?  @default(false)
+  emailVerified       Boolean?  @default(false)
   refreshToken        String?
   refreshTokenExpires DateTime?
+}
+
+model Shop {
+  id              String         @id @default(cuid())
+  shopifyDomain   String         @unique
+  accessToken     String
+  onboardingDone  Boolean        @default(false)
+  installedAt     DateTime       @default(now())
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  name            String
+  email           String
+  contactEmail    String
+  plan            String
+  receiveProductInsightsEmails  Boolean  @default(true)
+  receiveStockAlertEmails       Boolean  @default(true)
+  defaultThreshold     Int?
+  hiddenProducts  HiddenProduct[]
+  productInsightLogs ProductInsightLog[]
+  inventoryLevels InventoryLevel[]
+  alertRules           AlertRule[]
+  alertLogs            AlertLog[]
+}
+
+model AlertRule {
+  id                String          @id @default(cuid())
+  shop              Shop            @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  shopId            String
+  name              String
+  enabled           Boolean         @default(true)
+
+  scopeType         String
+  scopeValue        String?
+  scopeLabel        String?
+
+  threshold         Int
+  maxStockLevel     Int?
+
+  locationId        String?
+  locationName      String?
+
+  deliveryMode      String
+  schedule          String?
+  scheduleDayOfWeek Int?
+
+  recipients        AlertRecipient[]
+
+  lastTriggeredAt   DateTime?
+  triggerCount      Int             @default(0)
+
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  alertLogs         AlertLog[]
+
+  @@index([shopId, enabled])
+}
+
+model AlertRecipient {
+  id          String    @id @default(cuid())
+  alertRule   AlertRule @relation(fields: [alertRuleId], references: [id], onDelete: Cascade)
+  alertRuleId String
+  email       String
+
+  @@unique([alertRuleId, email])
+}
+
+model AlertLog {
+  id              String    @id @default(cuid())
+  alertRule       AlertRule @relation(fields: [alertRuleId], references: [id], onDelete: Cascade)
+  alertRuleId     String
+  shop            Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  shopId          String
+
+  productTitle    String
+  variantTitle    String?
+  sku             String?
+  currentStock    Int
+  threshold       Int
+  reorderQty      Int?
+
+  recipientEmails String
+  deliveryMode    String
+
+  sentAt          DateTime  @default(now())
+
+  @@index([shopId, sentAt])
+  @@index([alertRuleId, sentAt])
+}
+
+model HiddenProduct {
+  id          String   @id @default(cuid())
+  shop        Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  shopId      String
+  productId   String
+  variantId   String?
+  hiddenAt    DateTime @default(now())
+  
+  @@unique([shopId, productId, variantId])
+}
+
+model ProductInsightLog {
+  id          String   @id @default(cuid())
+  shop        Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  shopId      String
+  productId   String
+  productTitle String
+  variantId   String?
+  variantTitle String?
+  currentInventory Int
+  dailyRate   Float
+  firstDetectedAt DateTime @default(now())
+  lastDetectedAt DateTime @default(now())
+  
+  @@unique([shopId, productId, variantId])
+}
+
+model InventoryLevel {
+  id                String   @id @default(cuid())
+  shop              Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  shopId            String
+  inventoryItemId   String
+  locationId        String
+  availableQuantity Int
+  status            String   @default("active")
+  timestamp         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@unique([shopId, inventoryItemId, locationId])
 }
