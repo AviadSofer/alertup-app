@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "247f96ce6d3c3e9cd246e9f23fa18bba"
-application_url = "https://example.com"
+application_url = "https://alertup-app.vercel.app"
 embedded = true
 name = "Alertup Dev"
 
@@ -61,7 +61,7 @@ api_version = "2026-07"
   uri = "/webhooks/shop/redact"
 
 [auth]
-redirect_urls = [ "https://example.com/api/auth" ]
+redirect_urls = [ "https://alertup-app.vercel.app/api/auth" ]
 
 [build]
 include_config_on_deploy = true
