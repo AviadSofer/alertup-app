@@ -130,7 +130,7 @@ export default function Index() {
 
 export function ErrorBoundary() {
   const error = useRouteError();
-  log({ level: "error", message: "[app._index] Dashboard Route Error:", error });
+  console.error("[app._index] Dashboard Route Error:", error);
 
   return (
     <Page>
