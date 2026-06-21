@@ -1,8 +1,12 @@
 import { useState } from "react";
 import { AppProvider } from "@shopify/shopify-app-react-router/react";
 import { TitleBar } from "@shopify/app-bridge-react";
-import { Page, Layout, ProgressBar, Box } from "@shopify/polaris";
-import { AppProvider as PolarisAppProvider } from "@shopify/polaris";
+import {
+  Page,
+  ProgressBar,
+  Box,
+  AppProvider as PolarisAppProvider,
+} from "@shopify/polaris";
 import polarisTranslations from "@shopify/polaris/locales/en.json";
 import polarisStyles from "@shopify/polaris/build/esm/styles.css?url";
 import { ActionButtons } from "app/components/ActionButtons";
@@ -15,7 +19,7 @@ import {
   getShopByDomain,
   setOnboardingDone,
 } from "app/services/db/shop.service";
-import { useLoaderData } from 'react-router';
+import { useLoaderData } from "react-router";
 import {
   STEP_2_captureOnboardingStarted,
   STEP_3_capturePaymentInitiated,
@@ -62,27 +66,31 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     ? await getLowStockVariantPreview(shop.id, 5)
     : { totalMatching: 0, belowThreshold: 0 };
 
+  const pricingPageUrl = generatePricingLink(session.shop);
+
   return {
     apiKey: process.env.SHOPIFY_API_KEY || "",
     shopDomain: session.shop,
     shopEmail: shop?.contactEmail || shop?.email || null,
     initialPreview,
+    pricingPageUrl,
   };
 };
 
-export const action = async ({ request }: LoaderFunctionArgs) => {
-  const { session, redirect } = await authenticate.admin(request);
-  await STEP_3_capturePaymentInitiated({ distinctId: session.shop });
-  const pricingPageUrl = generatePricingLink(session.shop);
-  return redirect(pricingPageUrl, { target: "_top" });
-};
+
 
 export default function Onboarding() {
-  const { apiKey, initialPreview, shopEmail } = useLoaderData<typeof loader>();
+  const { apiKey, initialPreview, shopEmail, pricingPageUrl } = useLoaderData<typeof loader>();
 
   const [step, setStep] = useState(0);
   const [currentPreview, setCurrentPreview] = useState(initialPreview);
   const [selectedThreshold, setSelectedThreshold] = useState(5);
+
+  const handleUpgrade = () => {
+    if (pricingPageUrl) {
+      window.open(pricingPageUrl, "_top");
+    }
+  };
 
   const steps = [
     {
@@ -115,6 +123,7 @@ export default function Onboarding() {
       component: (
         <OnboardingPricing
           onBack={() => setStep(1)}
+          onNext={handleUpgrade}
           alertSummary={{
             threshold: selectedThreshold,
             email: shopEmail ?? null,
@@ -128,25 +137,55 @@ export default function Onboarding() {
 
   return (
     <PolarisAppProvider i18n={polarisTranslations}>
-    <AppProvider embedded apiKey={apiKey}>
-      <TitleBar title="Stockup">
-        <ActionButtons showSettings={false} />
-      </TitleBar>
-      <Page>
-        <div style={{ height: "calc(100vh - 64px)", display: "flex", flexDirection: "column" }}>
-          <Box paddingBlockStart="400" paddingBlockEnd="400">
-            <ProgressBar progress={((step + 1) / steps.length) * 100} />
-          </Box>
-          <div style={{ flex: 1, background: "var(--p-color-bg-surface)", borderRadius: "8px", display: "flex", flexDirection: "column" }}>
-            <div style={{ flex: 1, padding: "20px", display: "flex", flexDirection: "column" }}>
-              <div style={{ flex: 1, width: "100%", maxWidth: 960, margin: "0 auto", display: "flex", flexDirection: "column" }}>
-                {steps[step].component}
+      <AppProvider embedded apiKey={apiKey}>
+        <TitleBar title="Stockup">
+          <ActionButtons showSettings={false} />
+        </TitleBar>
+        <Page>
+          <div
+            style={{
+              height: "calc(100vh - 64px)",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            <Box paddingBlockStart="400" paddingBlockEnd="400">
+              <ProgressBar progress={((step + 1) / steps.length) * 100} />
+            </Box>
+            <div
+              style={{
+                flex: 1,
+                background: "var(--p-color-bg-surface)",
+                borderRadius: "8px",
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
+              <div
+                style={{
+                  flex: 1,
+                  padding: "20px",
+                  display: "flex",
+                  flexDirection: "column",
+                }}
+              >
+                <div
+                  style={{
+                    flex: 1,
+                    width: "100%",
+                    maxWidth: 960,
+                    margin: "0 auto",
+                    display: "flex",
+                    flexDirection: "column",
+                  }}
+                >
+                  {steps[step].component}
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </Page>
-    </AppProvider>
+        </Page>
+      </AppProvider>
     </PolarisAppProvider>
   );
 }

@@ -9,7 +9,7 @@ export async function validate(request: Request) {
     billing.check(),
   ]);
 
-  if (!shop || !hasActivePayment) {
+  if (!shop || !hasActivePayment || !shop.onboardingDone) {
     return { redirect: redirect("/onboarding") };
   }
 

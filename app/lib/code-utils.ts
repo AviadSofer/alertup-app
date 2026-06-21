@@ -46,8 +46,8 @@ const getAppHandle = () => {
     return process.env.SHOPIFY_APP_HANDLE;
   }
   return process.env.NODE_ENV === "production"
-    ? "stockup-9454"
-    : "stockup-9455";
+    ? "alertup" // Production handle
+    : "alertup-dev"; // Development handle
 };
 
 export const generateAppLink = (shopDomain: string) => {

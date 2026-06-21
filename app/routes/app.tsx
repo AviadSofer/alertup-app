@@ -10,6 +10,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { FeedbackCard } from "../components/FeedbackCard";
 import { ToastProvider } from "app/components/Toast";
 import { validate } from "app/services/auth-validation/validation.service";
+import polarisStyles from "@shopify/polaris/build/esm/styles.css?url";
+
+export const links = () => [{ rel: "stylesheet", href: polarisStyles }];
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const result = await validate(request);

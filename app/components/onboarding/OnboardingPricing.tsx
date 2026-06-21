@@ -10,6 +10,7 @@ import { motion } from "framer-motion";
 
 interface OnboardingPricingProps {
   onBack: () => void;
+  onNext: () => void;
   alertSummary?: {
     threshold: number;
     email: string | null;
@@ -19,6 +20,7 @@ interface OnboardingPricingProps {
 
 export function OnboardingPricing({
   onBack,
+  onNext,
   alertSummary,
 }: OnboardingPricingProps) {
   return (
@@ -91,11 +93,9 @@ export function OnboardingPricing({
           </div>
 
           <div style={{ width: "100%" }}>
-            <Form method="post">
-              <Button variant="primary" size="large" fullWidth submit>
-                Start Free Trial
-              </Button>
-            </Form>
+            <Button variant="primary" size="large" fullWidth onClick={onNext}>
+              Start Free Trial
+            </Button>
             <div style={{ marginTop: 12, textAlign: "center" }}>
               <Text as="p" variant="bodySm" tone="subdued">
                 You'll be taken to Shopify's secure billing page
