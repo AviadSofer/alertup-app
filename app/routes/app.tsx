@@ -47,7 +47,9 @@ export default function App() {
               <Link to="/app/alerts">Alert Rules</Link>
               <Link to="/app/alerts/history">Alert History</Link>
             </NavMenu>
-            <Outlet />
+            <div style={{ paddingBottom: "20px" }}>
+              <Outlet />
+            </div>
             <FeedbackCard />
           </ToastProvider>
         </QueryClientProvider>
