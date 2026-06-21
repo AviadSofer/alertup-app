@@ -2,6 +2,8 @@ import { useState } from "react";
 import { AppProvider } from "@shopify/shopify-app-react-router/react";
 import { TitleBar } from "@shopify/app-bridge-react";
 import { Page, Layout, ProgressBar, Box } from "@shopify/polaris";
+import { AppProvider as PolarisAppProvider } from "@shopify/polaris";
+import polarisTranslations from "@shopify/polaris/locales/en.json";
 import polarisStyles from "@shopify/polaris/build/esm/styles.css?url";
 import { ActionButtons } from "app/components/ActionButtons";
 import { OnboardingPricing } from "app/components/onboarding/OnboardingPricing";
@@ -125,7 +127,8 @@ export default function Onboarding() {
   ];
 
   return (
-    <AppProvider  apiKey={apiKey}>
+    <PolarisAppProvider i18n={polarisTranslations}>
+    <AppProvider embedded apiKey={apiKey}>
       <TitleBar title="Stockup">
         <ActionButtons showSettings={false} />
       </TitleBar>
@@ -144,5 +147,6 @@ export default function Onboarding() {
         </div>
       </Page>
     </AppProvider>
+    </PolarisAppProvider>
   );
 }
