@@ -179,7 +179,7 @@ export function OnboardingInventoryScan({
                   </div>
                 </div>
               </>
-            ) : hasLowStock ? (
+            ) : (
               <div style={{ textAlign: "center" }}>
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
@@ -268,40 +268,22 @@ export function OnboardingInventoryScan({
                       </Text>
                     </div>
                   )}
+                  {!hasLowStock && (
+                    <div style={{ marginTop: 24 }}>
+                      <Text variant="bodyLg" as="p" tone="subdued">
+                        Set up alerts now so you're ready when products start running low.
+                      </Text>
+                    </div>
+                  )}
                 </motion.div>
-              </div>
-            ) : (
-              <div style={{ textAlign: "center" }}>
-                <div
-                  style={{
-                    width: 56,
-                    height: 56,
-                    borderRadius: "50%",
-                    background: "#E3F1DF",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    margin: "0 auto 16px",
-                    fontSize: 28,
-                  }}
-                >
-                  ✓
-                </div>
-                <Text variant="headingLg" as="h2">
-                  Your inventory looks healthy
-                </Text>
-                <div style={{ marginTop: 8 }}>
-                  <Text variant="bodyLg" as="p" tone="subdued">
-                    No products are running low right now. We'll keep watching.
-                  </Text>
-                </div>
               </div>
             )}
           </div>
 
           {/* Right Column */}
-          <div style={{ flex: 1, minWidth: 360, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-            {isScanning ? (
+          {(isScanning || (hasLowStock && localTopItems.length > 0)) && (
+            <div style={{ flex: 1, minWidth: 360, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+              {isScanning ? (
               <BlockStack gap="300">
                 {[0.5, 0.35, 0.2].map((opacity, i) => (
                   <div
@@ -408,7 +390,8 @@ export function OnboardingInventoryScan({
                 </BlockStack>
               </motion.div>
             ) : null}
-          </div>
+            </div>
+          )}
         </div>
 
         {/* Bottom CTA */}

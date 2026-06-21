@@ -85,6 +85,7 @@ export default function Onboarding() {
   const [step, setStep] = useState(0);
   const [currentPreview, setCurrentPreview] = useState(initialPreview);
   const [selectedThreshold, setSelectedThreshold] = useState(5);
+  const [skippedRule, setSkippedRule] = useState(false);
 
   const handleUpgrade = () => {
     if (pricingPageUrl) {
@@ -113,7 +114,14 @@ export default function Onboarding() {
           shopEmail={shopEmail}
           initialPreview={currentPreview}
           selectedThreshold={selectedThreshold}
-          onNext={() => setStep(2)}
+          onNext={() => {
+            setSkippedRule(false);
+            setStep(2);
+          }}
+          onSkip={() => {
+            setSkippedRule(true);
+            setStep(2);
+          }}
           onBack={() => setStep(0)}
         />
       ),
@@ -124,11 +132,15 @@ export default function Onboarding() {
         <OnboardingPricing
           onBack={() => setStep(1)}
           onNext={handleUpgrade}
-          alertSummary={{
-            threshold: selectedThreshold,
-            email: shopEmail ?? null,
-            productsCount: currentPreview.totalMatching,
-          }}
+          alertSummary={
+            skippedRule
+              ? undefined
+              : {
+                  threshold: selectedThreshold,
+                  email: shopEmail ?? null,
+                  productsCount: currentPreview.totalMatching,
+                }
+          }
         />
       ),
       label: "Pricing",

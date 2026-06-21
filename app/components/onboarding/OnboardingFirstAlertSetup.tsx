@@ -24,6 +24,7 @@ interface OnboardingFirstAlertSetupProps {
   shopEmail: string | null;
   initialPreview: PreviewState;
   selectedThreshold?: number;
+  onSkip?: () => void;
 }
 
 function createDraftRule(
@@ -71,6 +72,7 @@ export function OnboardingFirstAlertSetup({
   shopEmail,
   initialPreview,
   selectedThreshold = 5,
+  onSkip,
 }: OnboardingFirstAlertSetupProps) {
   const [draftRule, setDraftRule] = useState(() =>
     createDraftRule(shopEmail, selectedThreshold),
@@ -422,11 +424,14 @@ export function OnboardingFirstAlertSetup({
         >
           <div style={{ width: "100%", maxWidth: 360 }}>
             <Button variant="primary" size="large" fullWidth onClick={onNext}>
-              Continue
+              Create alert
             </Button>
-            <div style={{ marginTop: 12 }}>
-              <Button variant="monochromePlain" fullWidth onClick={onBack}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 12 }}>
+              <Button variant="monochromePlain" onClick={onBack}>
                 Back
+              </Button>
+              <Button variant="monochromePlain" onClick={onSkip || onNext}>
+                Skip for now
               </Button>
             </div>
             <div style={{ marginTop: 16, textAlign: "center" }}>

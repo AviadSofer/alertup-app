@@ -54,7 +54,10 @@ export function OnboardingPricing({
             display: "flex",
             flexDirection: "column",
             justifyContent: "center",
-            alignItems: "flex-start",
+            alignItems: alertSummary ? "flex-start" : "center",
+            textAlign: alertSummary ? "left" : "center",
+            maxWidth: alertSummary ? "100%" : 400,
+            margin: alertSummary ? "0" : "0 auto",
           }}
         >
           <motion.div
@@ -83,7 +86,7 @@ export function OnboardingPricing({
           </motion.div>
 
           <Text variant="heading2xl" as="h1">
-            Your alert is ready
+            {alertSummary ? "Your alert is ready" : "You're all set"}
           </Text>
 
           <div style={{ marginTop: 12, marginBottom: 32 }}>
@@ -103,8 +106,8 @@ export function OnboardingPricing({
             </div>
           </div>
 
-          <div style={{ marginTop: 24 }}>
-            <Button variant="monochromePlain" size="slim" onClick={onBack}>
+          <div style={{ marginTop: 24, width: "100%" }}>
+            <Button variant="monochromePlain" fullWidth onClick={onBack}>
               Back
             </Button>
           </div>
