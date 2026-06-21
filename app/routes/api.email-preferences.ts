@@ -6,40 +6,58 @@ import {
 } from "app/services/db/shop.service";
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  const { session } = await authenticate.admin(request);
-  const preferences = await getEmailPreferences(session.shop);
-  return preferences;
+  console.log("[api.email-preferences] GET request received");
+
+  try {
+    const { session } = await authenticate.admin(request);
+    console.log(`[api.email-preferences] Shop: ${session.shop}`);
+    const preferences = await getEmailPreferences(session.shop);
+    console.log(`[api.email-preferences] Preferences loaded`);
+    return preferences;
+  } catch (error) {
+    console.error("[api.email-preferences] Error loading preferences:", error);
+    throw error;
+  }
 }
 
 export async function action({ request }: ActionFunctionArgs) {
-  const { session } = await authenticate.admin(request);
+  console.log("[api.email-preferences] POST request received");
 
-  const formData = await request.formData();
+  try {
+    const { session } = await authenticate.admin(request);
+    console.log(`[api.email-preferences] Updating for shop: ${session.shop}`);
 
-  const receiveProductInsightsEmailsValue = formData.get(
-    "receiveProductInsightsEmails",
-  );
-  const receiveStockAlertEmailsValue = formData.get("receiveStockAlertEmails");
+    const formData = await request.formData();
 
-  const updateData: {
-    receiveProductInsightsEmails?: boolean;
-    receiveStockAlertEmails?: boolean;
-  } = {};
+    const receiveProductInsightsEmailsValue = formData.get(
+      "receiveProductInsightsEmails",
+    );
+    const receiveStockAlertEmailsValue = formData.get("receiveStockAlertEmails");
 
-  if (receiveProductInsightsEmailsValue !== null) {
-    updateData.receiveProductInsightsEmails =
-      receiveProductInsightsEmailsValue === "true";
+    const updateData: {
+      receiveProductInsightsEmails?: boolean;
+      receiveStockAlertEmails?: boolean;
+    } = {};
+
+    if (receiveProductInsightsEmailsValue !== null) {
+      updateData.receiveProductInsightsEmails =
+        receiveProductInsightsEmailsValue === "true";
+    }
+
+    if (receiveStockAlertEmailsValue !== null) {
+      updateData.receiveStockAlertEmails =
+        receiveStockAlertEmailsValue === "true";
+    }
+
+    const updatedPreferences = await updateEmailPreferences(
+      session.shop,
+      updateData,
+    );
+
+    console.log(`[api.email-preferences] Updated successfully`);
+    return { success: true, preferences: updatedPreferences };
+  } catch (error) {
+    console.error("[api.email-preferences] Error updating:", error);
+    throw error;
   }
-
-  if (receiveStockAlertEmailsValue !== null) {
-    updateData.receiveStockAlertEmails =
-      receiveStockAlertEmailsValue === "true";
-  }
-
-  const updatedPreferences = await updateEmailPreferences(
-    session.shop,
-    updateData,
-  );
-
-  return { success: true, preferences: updatedPreferences };
 }

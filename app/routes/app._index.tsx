@@ -3,7 +3,6 @@ import { Link, useLoaderData, useRouteError } from 'react-router';
 import { Banner, Layout, Page } from "@shopify/polaris";
 
 import { authenticate } from "app/shopify.server";
-import { isPivotPlaceholderEnabled } from "app/lib/feature-toggles";
 import {
   DEFAULT_RULE_NAME,
   getAlertRulesForShop,
@@ -14,80 +13,60 @@ import { getAlertDashboardSummary } from "app/services/alert-rules/dashboard.ser
 import type { AlertDashboardSummary } from "app/services/alert-rules/dashboard.service.server";
 import { getShopByDomain } from "app/services/db/shop.service";
 import { sendAlertRuleCreatedEmail } from "app/services/resend/resend.service";
-import { LowStockActivation } from "../components/LowStockActivation";
 import { PivotDashboard } from "../components/PivotDashboard";
 
-import type { InventoryStatus } from "../models/inventory-status.server";
-import { getInventoryStatus } from "../models/inventory-status.server";
-import { getProductInventoryAnalysis } from "../models/inventory-analysis.server";
-import { ClassicHomePage } from "../components/ClassicHomePage";
-
-type LoaderData =
-  | {
-      mode: "pivot";
-      summary: AlertDashboardSummary;
-      shopEmail: string | null;
-    }
-  | { mode: "classic"; inventoryStatus: InventoryStatus };
+interface LoaderData {
+  summary: AlertDashboardSummary;
+  shopEmail: string | null;
+}
 
 export const loader = async ({
   request,
 }: LoaderFunctionArgs): Promise<LoaderData> => {
-  if (isPivotPlaceholderEnabled()) {
-    const { session } = await authenticate.admin(request);
-    const [shopId, shop] = await Promise.all([
-      getShopIdByDomain(session.shop),
-      getShopByDomain(session.shop),
-    ]);
-    const shopEmail = shop?.contactEmail || shop?.email || null;
+  console.log("[app._index] Loading dashboard");
 
-    if (!shopId) {
-      return {
-        mode: "pivot",
-        shopEmail,
-        summary: {
-          activeRulesCount: 0,
-          productsBelowThresholdCount: 0,
-          totalInventoryItemsCount: 0,
-          alertsSentThisWeek: 0,
-          defaultThreshold: null,
-          hasRules: false,
-          rules: [],
-          recentAlerts: [],
-        },
-      };
-    }
+  const { session } = await authenticate.admin(request);
+  console.log(`[app._index] Authenticated shop: ${session.shop}`);
 
-    const summary = await getAlertDashboardSummary(shopId);
+  const [shopId, shop] = await Promise.all([
+    getShopIdByDomain(session.shop),
+    getShopByDomain(session.shop),
+  ]);
+  const shopEmail = shop?.contactEmail || shop?.email || null;
 
+  if (!shopId) {
+    console.log("[app._index] No shopId found, returning empty summary");
     return {
-      mode: "pivot",
-      summary,
       shopEmail,
+      summary: {
+        activeRulesCount: 0,
+        productsBelowThresholdCount: 0,
+        totalInventoryItemsCount: 0,
+        alertsSentThisWeek: 0,
+        defaultThreshold: null,
+        hasRules: false,
+        rules: [],
+        recentAlerts: [],
+      },
     };
   }
 
-  const { admin, session } = await authenticate.admin(request);
-
-  const productInventoryAnalysis = await getProductInventoryAnalysis(
-    session.shop,
-    admin,
-  );
-
-  const activeProducts = productInventoryAnalysis.filter(
-    (product) => product.status === "ACTIVE",
-  );
+  const summary = await getAlertDashboardSummary(shopId);
+  console.log(`[app._index] Dashboard loaded: ${summary.activeRulesCount} active rules`);
 
   return {
-    mode: "classic",
-    inventoryStatus: getInventoryStatus(activeProducts),
+    summary,
+    shopEmail,
   };
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
+  console.log("[app._index] Action received");
+
   const { session } = await authenticate.admin(request);
   const formData = await request.formData();
   const intent = String(formData.get("intent") ?? "");
+  console.log(`[app._index] Action intent: ${intent}, shop: ${session.shop}`);
 
   if (intent !== "activate-default-alert") {
     return { error: "Unknown action." };
@@ -111,6 +90,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   try {
     await setStoreDefaultThreshold(shopId, threshold);
+    console.log(`[app._index] Default threshold set to ${threshold}`);
 
     const recipientEmail = (shop?.contactEmail || shop?.email || "").trim();
 
@@ -121,8 +101,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           shopDomain: session.shop,
           threshold,
         });
+        console.log(`[app._index] Alert rule confirmation email sent to ${recipientEmail}`);
       } catch (emailError) {
-        console.error("Alert rule confirmation email failed:", emailError);
+        console.error("[app._index] Alert rule confirmation email failed:", emailError);
       }
     }
 
@@ -135,7 +116,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
     return { success: true, rule };
   } catch (error) {
-    console.error("Default alert activation failed:", error);
+    console.error("[app._index] Default alert activation failed:", error);
     return { error: "Low-stock alerts could not be activated yet." };
   }
 };
@@ -143,16 +124,12 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 export default function Index() {
   const data = useLoaderData<typeof loader>() as LoaderData;
 
-  if (data.mode === "classic") {
-    return <ClassicHomePage inventoryStatus={data.inventoryStatus} />;
-  }
-
   return <PivotDashboard summary={data.summary} shopEmail={data.shopEmail} />;
 }
 
 export function ErrorBoundary() {
   const error = useRouteError();
-  console.error("Dashboard Route Error:", error);
+  console.error("[app._index] Dashboard Route Error:", error);
 
   return (
     <Page>
