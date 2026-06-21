@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useFetcher } from "react-router";
 import { motion } from "framer-motion";
 import { BlockStack, Button, Modal, Text, Icon } from "@shopify/polaris";
 import {
@@ -77,6 +78,19 @@ export function OnboardingFirstAlertSetup({
   const [draftRule, setDraftRule] = useState(() =>
     createDraftRule(shopEmail, selectedThreshold),
   );
+  const fetcher = useFetcher();
+
+  const handleCreateAlert = () => {
+    fetcher.submit(
+      {
+        intent: "create_alert",
+        rulePayload: JSON.stringify(draftRule),
+      },
+      { method: "POST" }
+    );
+    onNext();
+  };
+
   const [editOpen, setEditOpen] = useState(false);
   const [saveTrigger, setSaveTrigger] = useState(0);
 
@@ -423,7 +437,7 @@ export function OnboardingFirstAlertSetup({
           }}
         >
           <div style={{ width: "100%", maxWidth: 360 }}>
-            <Button variant="primary" size="large" fullWidth onClick={onNext}>
+            <Button variant="primary" size="large" fullWidth onClick={handleCreateAlert} loading={fetcher.state === "submitting"}>
               Create alert
             </Button>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 12 }}>

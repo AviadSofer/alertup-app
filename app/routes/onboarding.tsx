@@ -13,7 +13,7 @@ import { ActionButtons } from "app/components/ActionButtons";
 import { OnboardingPricing } from "app/components/onboarding/OnboardingPricing";
 import { OnboardingInventoryScan } from "app/components/onboarding/OnboardingInventoryScan";
 import { OnboardingFirstAlertSetup } from "app/components/onboarding/OnboardingFirstAlertSetup";
-import type { LoaderFunctionArgs } from "react-router";
+import type { LoaderFunctionArgs, ActionFunctionArgs } from "react-router";
 import { authenticate } from "app/shopify.server";
 import {
   getShopByDomain,
@@ -31,6 +31,7 @@ import { upsertInventoryLevels } from "app/services/db/inventory-level.service";
 import { generatePricingLink } from "app/lib/code-utils";
 import { sendWelcomeEmail } from "app/services/resend/resend.service";
 import { getLowStockVariantPreview } from "app/services/alert-rules/dashboard.service.server";
+import { createAlertRule } from "app/services/alert-rules/alert-rule.service.server";
 
 export const links = () => [{ rel: "stylesheet", href: polarisStyles }];
 
@@ -70,14 +71,45 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   return {
     apiKey: process.env.SHOPIFY_API_KEY || "",
-    shopDomain: session.shop,
-    shopEmail: shop?.contactEmail || shop?.email || null,
     initialPreview,
+    shopEmail: shop?.email ?? null,
     pricingPageUrl,
   };
 };
 
+export const action = async ({ request }: ActionFunctionArgs) => {
+  const { session } = await authenticate.admin(request);
+  const formData = await request.formData();
+  const intent = formData.get("intent");
 
+  if (intent === "create_alert") {
+    const payload = formData.get("rulePayload");
+    if (typeof payload === "string") {
+      const parsed = JSON.parse(payload);
+      const shop = await getShopByDomain(session.shop);
+      if (shop) {
+        await createAlertRule(shop.id, {
+          name: parsed.name,
+          enabled: parsed.enabled,
+          scopeType: parsed.scopeType as any,
+          scopeValue: parsed.scopeValue,
+          scopeLabel: parsed.scopeLabel,
+          threshold: parsed.threshold,
+          maxStockLevel: parsed.maxStockLevel,
+          locationId: parsed.locationId,
+          locationName: parsed.locationName,
+          deliveryMode: parsed.deliveryMode as any,
+          schedule: parsed.schedule,
+          scheduleDayOfWeek: parsed.scheduleDayOfWeek,
+          recipients: parsed.recipients.map((r: any) => r.email),
+        });
+      }
+    }
+    return { ok: true };
+  }
+
+  return { ok: true };
+};
 
 export default function Onboarding() {
   const { apiKey, initialPreview, shopEmail, pricingPageUrl } = useLoaderData<typeof loader>();
