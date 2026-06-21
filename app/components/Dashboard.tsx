@@ -7,7 +7,6 @@ import {
   Button,
   Card,
   Divider,
-  EmptyState,
   Icon,
   InlineStack,
   Layout,
@@ -37,11 +36,11 @@ import { LearnAlertRulesModal } from "./LearnAlertRulesModal";
 import { LowStockActivation } from "./LowStockActivation";
 import { EmptyStateAnimation } from "./Animations";
 import { ToggleSwitch } from "./ToggleSwitch";
-import styles from "./PivotDashboard.module.css";
+import styles from "./Dashboard.module.css";
 
 const MAX_RULES_PREVIEW = 5;
 
-export function PivotDashboard({
+export function Dashboard({
   summary,
   shopEmail,
 }: {
@@ -326,6 +325,8 @@ export function PivotDashboard({
           </Card>
         </Layout.Section>
       </Layout>
+      
+      <div style={{ paddingBottom: "20px" }} />
 
       <AlertRuleDetailModal
         rule={selectedRule}

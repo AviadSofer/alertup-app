@@ -13,7 +13,7 @@ import { getAlertDashboardSummary } from "app/services/alert-rules/dashboard.ser
 import type { AlertDashboardSummary } from "app/services/alert-rules/dashboard.service.server";
 import { getShopByDomain } from "app/services/db/shop.service";
 import { sendAlertRuleCreatedEmail } from "app/services/resend/resend.service";
-import { PivotDashboard } from "../components/PivotDashboard";
+import { Dashboard } from "../components/Dashboard";
 
 interface LoaderData {
   summary: AlertDashboardSummary;
@@ -124,7 +124,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 export default function Index() {
   const data = useLoaderData<typeof loader>() as LoaderData;
 
-  return <PivotDashboard summary={data.summary} shopEmail={data.shopEmail} />;
+  return <Dashboard summary={data.summary} shopEmail={data.shopEmail} />;
 }
 
 export function ErrorBoundary() {
