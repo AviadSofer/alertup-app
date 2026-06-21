@@ -9,11 +9,12 @@ import { getShopByDomain } from "../services/db/shop.service";
 import db from "../db.server";
 import { findMatchingRules } from "../services/alert-rules/alert-matcher.service.server";
 import { sendAlertDigestEmail } from "../services/resend/resend.service";
+import { log } from "app/lib/logger.server";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const { shop, payload } = await authenticate.webhook(request);
 
-  console.log(`Received inventory update webhook from ${shop}`);
+  log({ message: `Received inventory update webhook from ${shop}` });
 
   const {
     inventory_item_id: inventoryItemId,
@@ -22,7 +23,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   } = payload;
 
   if (typeof newAvailableQuantity !== "number" || isNaN(newAvailableQuantity)) {
-    console.warn(`[Webhook] Invalid or missing available quantity in payload for item ${inventoryItemId}: ${newAvailableQuantity}`);
+    log({ level: "warn", message: `[Webhook] Invalid or missing available quantity in payload for item ${inventoryItemId}: ${newAvailableQuantity}` });
     return new Response("Invalid available quantity", { status: 200 });
   }
 
@@ -30,9 +31,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const formattedInventoryItemId = `gid://shopify/InventoryItem/${inventoryItemId}`;
   const formattedLocationId = `gid://shopify/Location/${locationId}`;
 
-  console.log(
-    `Inventory update for item ${formattedInventoryItemId} at location ${formattedLocationId}. New available quantity: ${newAvailableQuantity}`,
-  );
+  log({ message: `Inventory update for item ${formattedInventoryItemId} at location ${formattedLocationId}. New available quantity: ${newAvailableQuantity}` });
 
   // Run DB lookups in parallel to save ~1-2s of sequential roundtrips
   const [previousInventoryData, shopData] = await Promise.all([
@@ -44,14 +43,12 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   ]);
 
   if (!previousInventoryData) {
-    console.log(
-      `No previous data found for inventory item ${formattedInventoryItemId} at location ${formattedLocationId}`,
-    );
+    log({ message: `No previous data found for inventory item ${formattedInventoryItemId} at location ${formattedLocationId}` });
     return new Response("No previous data found", { status: 200 });
   }
 
   if (!shopData) {
-    console.log(`Shop data not found for ${shop}`);
+    log({ message: `Shop data not found for ${shop}` });
     return new Response("Shop data not found", { status: 200 });
   }
 
@@ -63,11 +60,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   );
 
   if (productInfo) {
-    console.log(`Found product info: ${productInfo.productTitle}`);
+    log({ message: `Found product info: ${productInfo.productTitle}` });
   } else {
-    console.log(
-      `Could not find product info for inventory item ${formattedInventoryItemId}`,
-    );
+    log({ message: `Could not find product info for inventory item ${formattedInventoryItemId}` });
   }
 
   const skipEmailAlerts = shopData.receiveStockAlertEmails === false;
@@ -99,12 +94,12 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       }));
 
       if (recipients.length === 0) {
-        console.log(`Skipping rule ${match.rule.id}; no recipients configured`);
+        log({ message: `Skipping rule ${match.rule.id}; no recipients configured` });
         continue;
       }
 
       try {
-        console.log(`Attempting to send alert email for rule ${match.rule.id} to ${recipients.length} recipients`);
+        log({ message: `Attempting to send alert email for rule ${match.rule.id} to ${recipients.length} recipients` });
         await sendAlertDigestEmail({
           to: recipients,
           shopDomain: shop,
@@ -121,7 +116,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           ],
         });
 
-        console.log(`Email sent successfully for rule ${match.rule.id}. Updating logs and stats.`);
+        log({ message: `Email sent successfully for rule ${match.rule.id}. Updating logs and stats.` });
         await db.$transaction([
           db.alertLog.create({
             data: {
@@ -145,9 +140,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
             },
           }),
         ]);
-        console.log(`Successfully processed rule ${match.rule.id} for ${shop}`);
+        log({ message: `Successfully processed rule ${match.rule.id} for ${shop}` });
       } catch (error) {
-        console.error(`Failed to process rule ${match.rule.id} for ${shop}:`, error);
+        log({ level: "error", message: `Failed to process rule ${match.rule.id} for ${shop}:`, error });
       }
     }
   }
@@ -160,7 +155,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     skipEmailAlerts,
   });
 
-  console.log(`Inventory update processing result: ${result}`);
+  log({ message: `Inventory update processing result: ${result}` });
 
   return new Response(result, { status: 200 });
 };

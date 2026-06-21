@@ -12,6 +12,7 @@ import { authenticate } from "app/shopify.server";
 import { getShopIdByDomain, getStoreDefaultThreshold, createAlertRule } from "app/services/alert-rules/alert-rule.service.server";
 import { getShopLocations } from "app/services/locations.service.server";
 import { getProductVendors } from "app/services/graphql/get-product-vendors";
+import { log } from "app/lib/logger.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin, session } = await authenticate.admin(request);
@@ -43,7 +44,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     await createAlertRule(shopId, input);
     return { success: true };
   } catch (error) {
-    console.error("Create alert rule failed:", error);
+    log({ level: "error", message: "Create alert rule failed:", error });
     return { error: "The rule could not be created yet." };
   }
 };

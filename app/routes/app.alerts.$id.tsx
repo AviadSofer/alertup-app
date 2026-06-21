@@ -15,6 +15,7 @@ import {
 } from "app/services/alert-rules/alert-rule.service.server";
 import { getShopLocations } from "app/services/locations.service.server";
 import { getProductVendors } from "app/services/graphql/get-product-vendors";
+import { log } from "app/lib/logger.server";
 
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   const { admin } = await authenticate.admin(request);
@@ -46,7 +47,7 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
     const rule = await updateAlertRule(ruleId, input);
     return { success: true, rule };
   } catch (error) {
-    console.error("Update alert rule failed:", error);
+    log({ level: "error", message: "Update alert rule failed:", error });
     return { error: "The rule could not be updated yet." };
   }
 };

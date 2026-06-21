@@ -36,6 +36,7 @@ import {
   bulkToggleAlertRules,
   bulkDeleteAlertRules,
 } from "app/services/alert-rules/alert-rule.service.server";
+import { log } from "app/lib/logger.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
@@ -107,7 +108,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
     return { error: "Unknown action." };
   } catch (error) {
-    console.error("Alert rules action failed:", error);
+    log({ level: "error", message: "Alert rules action failed:", error });
     return { error: "This alert action could not be saved yet." };
   }
 };

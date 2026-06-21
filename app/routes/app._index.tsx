@@ -14,6 +14,7 @@ import type { AlertDashboardSummary } from "app/services/alert-rules/dashboard.s
 import { getShopByDomain } from "app/services/db/shop.service";
 import { sendAlertRuleCreatedEmail } from "app/services/resend/resend.service";
 import { Dashboard } from "../components/Dashboard";
+import { log } from "app/lib/logger.server";
 
 interface LoaderData {
   summary: AlertDashboardSummary;
@@ -23,10 +24,10 @@ interface LoaderData {
 export const loader = async ({
   request,
 }: LoaderFunctionArgs): Promise<LoaderData> => {
-  console.log("[app._index] Loading dashboard");
+  log({ message: "[app._index] Loading dashboard" });
 
   const { session } = await authenticate.admin(request);
-  console.log(`[app._index] Authenticated shop: ${session.shop}`);
+  log({ message: `[app._index] Authenticated shop: ${session.shop}` });
 
   const [shopId, shop] = await Promise.all([
     getShopIdByDomain(session.shop),
@@ -35,7 +36,7 @@ export const loader = async ({
   const shopEmail = shop?.contactEmail || shop?.email || null;
 
   if (!shopId) {
-    console.log("[app._index] No shopId found, returning empty summary");
+    log({ message: "[app._index] No shopId found, returning empty summary" });
     return {
       shopEmail,
       summary: {
@@ -52,7 +53,7 @@ export const loader = async ({
   }
 
   const summary = await getAlertDashboardSummary(shopId);
-  console.log(`[app._index] Dashboard loaded: ${summary.activeRulesCount} active rules`);
+  log({ message: `[app._index] Dashboard loaded: ${summary.activeRulesCount} active rules` });
 
   return {
     summary,
@@ -61,12 +62,12 @@ export const loader = async ({
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  console.log("[app._index] Action received");
+  log({ message: "[app._index] Action received" });
 
   const { session } = await authenticate.admin(request);
   const formData = await request.formData();
   const intent = String(formData.get("intent") ?? "");
-  console.log(`[app._index] Action intent: ${intent}, shop: ${session.shop}`);
+  log({ message: `[app._index] Action intent: ${intent}, shop: ${session.shop}` });
 
   if (intent !== "activate-default-alert") {
     return { error: "Unknown action." };
@@ -90,7 +91,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   try {
     await setStoreDefaultThreshold(shopId, threshold);
-    console.log(`[app._index] Default threshold set to ${threshold}`);
+    log({ message: `[app._index] Default threshold set to ${threshold}` });
 
     const recipientEmail = (shop?.contactEmail || shop?.email || "").trim();
 
@@ -101,9 +102,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           shopDomain: session.shop,
           threshold,
         });
-        console.log(`[app._index] Alert rule confirmation email sent to ${recipientEmail}`);
+        log({ message: `[app._index] Alert rule confirmation email sent to ${recipientEmail}` });
       } catch (emailError) {
-        console.error("[app._index] Alert rule confirmation email failed:", emailError);
+        log({ level: "error", message: "[app._index] Alert rule confirmation email failed:", error: emailError });
       }
     }
 
@@ -116,7 +117,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
     return { success: true, rule };
   } catch (error) {
-    console.error("[app._index] Default alert activation failed:", error);
+    log({ level: "error", message: "[app._index] Default alert activation failed:", error });
     return { error: "Low-stock alerts could not be activated yet." };
   }
 };
@@ -129,7 +130,7 @@ export default function Index() {
 
 export function ErrorBoundary() {
   const error = useRouteError();
-  console.error("[app._index] Dashboard Route Error:", error);
+  log({ level: "error", message: "[app._index] Dashboard Route Error:", error });
 
   return (
     <Page>

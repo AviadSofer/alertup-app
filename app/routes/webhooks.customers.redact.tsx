@@ -1,18 +1,17 @@
 import type { ActionFunctionArgs } from "react-router";
 import { authenticate } from "../shopify.server";
+import { log } from "app/lib/logger.server";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const { shop, topic, payload } = await authenticate.webhook(request);
 
-  console.log(`Received ${topic} webhook for ${shop}`);
+  log({ message: `Received ${topic} webhook for ${shop}` });
 
   // Parse the webhook payload
   const { shop_id, shop_domain, customer, orders_to_redact } = payload;
 
-  console.log(
-    `Customer redaction request for customer ${customer.id} (${customer.email})`,
-  );
-  console.log(`Orders to redact: ${orders_to_redact}`);
+  log({ message: `Customer redaction request for customer ${customer.id} (${customer.email})` });
+  log({ message: `Orders to redact: ${orders_to_redact}` });
 
   try {
     // TODO: Implement customer data deletion logic based on your app's data storage
@@ -57,19 +56,22 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     // });
 
     // Log the redaction for compliance tracking
-    console.log("Customer data redaction completed:", {
-      shop_id,
-      shop_domain,
-      customer_id: customer.id,
-      customer_email: customer.email,
-      orders_redacted: orders_to_redact,
-      timestamp: new Date().toISOString(),
+    log({
+      message: "Customer data redaction completed:",
+      data: {
+        shop_id,
+        shop_domain,
+        customer_id: customer.id,
+        customer_email: customer.email,
+        orders_redacted: orders_to_redact,
+        timestamp: new Date().toISOString(),
+      }
     });
 
     // TODO: Store this redaction record in your database for compliance tracking
     // You should keep a record that redaction was completed (but not the actual data)
   } catch (error) {
-    console.error("Error processing customer redaction request:", error);
+    log({ level: "error", message: "Error processing customer redaction request:", error });
     // Still return success to acknowledge receipt of the webhook
     // You should retry the deletion process later
   }

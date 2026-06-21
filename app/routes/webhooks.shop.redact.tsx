@@ -1,18 +1,17 @@
 import type { ActionFunctionArgs } from "react-router";
 import { authenticate } from "../shopify.server";
 import db from "../db.server";
+import { log } from "app/lib/logger.server";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const { shop, topic, payload } = await authenticate.webhook(request);
 
-  console.log(`Received ${topic} webhook for ${shop}`);
+  log({ message: `Received ${topic} webhook for ${shop}` });
 
   // Parse the webhook payload
   const { shop_id, shop_domain } = payload;
 
-  console.log(
-    `Shop redaction request for shop ${shop_domain} (ID: ${shop_id})`,
-  );
+  log({ message: `Shop redaction request for shop ${shop_domain} (ID: ${shop_id})` });
 
   try {
     // This webhook is sent 48 hours after app uninstallation
@@ -34,7 +33,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       });
     } catch (error) {
       // Shop might already be deleted in app/uninstalled webhook
-      console.log("Shop record already deleted or not found");
+      log({ message: "Shop record already deleted or not found" });
     }
 
     // Delete any other shop-related data your app stores:
@@ -65,16 +64,19 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     // });
 
     // Log the shop redaction for compliance tracking
-    console.log("Shop data redaction completed:", {
-      shop_id,
-      shop_domain,
-      timestamp: new Date().toISOString(),
+    log({
+      message: "Shop data redaction completed:",
+      data: {
+        shop_id,
+        shop_domain,
+        timestamp: new Date().toISOString(),
+      }
     });
 
     // TODO: Store this redaction record for compliance tracking
     // You should keep a minimal record that redaction was completed
   } catch (error) {
-    console.error("Error processing shop redaction request:", error);
+    log({ level: "error", message: "Error processing shop redaction request:", error });
     // Still return success to acknowledge receipt of the webhook
     // You should retry the deletion process later
   }
